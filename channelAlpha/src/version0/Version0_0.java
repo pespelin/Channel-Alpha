@@ -81,12 +81,13 @@ public class Version0_0 implements KeyListener, MouseListener, MouseMotionListen
 		}
 		
 		public static void updateCanvas() {
-			if(Status.DAdown) { verticalC -= 1.f/zoomVertical; }
-			if(Status.UAdown) { verticalC += 1.f/zoomVertical; }
-			if(Status.RAdown) { horrizontalC -= 1.f/zoomHorrizontal; }
-			if(Status.LAdown) { horrizontalC += 1.f/zoomHorrizontal; }
-			if(!Status.mouseONcanvas) { return; }
-			if(!(Status.mouse1down || Status.mouse3down)) { return; }
+			float moveSpeed = 5.0f; // Hareket hızını artırmak için bu değeri ekledim
+			if (Status.DAdown) { verticalC -= moveSpeed / zoomVertical; }
+			if (Status.UAdown) { verticalC += moveSpeed / zoomVertical; }
+			if (Status.RAdown) { horrizontalC -= moveSpeed / zoomHorrizontal; }
+			if (Status.LAdown) { horrizontalC += moveSpeed / zoomHorrizontal; }
+			if (!Status.mouseONcanvas) { return; }
+			if (!(Status.mouse1down || Status.mouse3down)) { return; }
 			int mhp = 0, mvp = 0;
 			{
 				Point mp = MouseInfo.getPointerInfo().getLocation();
@@ -94,18 +95,16 @@ public class Version0_0 implements KeyListener, MouseListener, MouseMotionListen
 				mhp = getImageXbyDisplayX(mp.x - cp.x);
 				mvp = getImageYbyDisplayY(mp.y - cp.y);
 			}
-			if(mhp < 0 || mvp < 0 || mhp >= image.getWidth() || mvp >= image.getHeight()) {
+			if (mhp < 0 || mvp < 0 || mhp >= image.getWidth() || mvp >= image.getHeight()) {
 				return;
 			}
-			if(Status.mouse1down && Status.mouse3down) {
-				
-				
-			} else if(Status.mouse1down) {
+			if (Status.mouse1down && Status.mouse3down) {
+
+			} else if (Status.mouse1down) {
 				drawSquare(mhp, mvp, 1);
-			} else if(Status.mouse3down) {
+			} else if (Status.mouse3down) {
 				drawSquare(mhp, mvp, 3);
 			}
-			
 		}
 		public static void drawStroke(int beginH, int beginV, int endH, int endV, int buttonIndex) {
 			int vectorH = endH - beginH, vectorV = endV - beginV;
@@ -344,6 +343,76 @@ public class Version0_0 implements KeyListener, MouseListener, MouseMotionListen
 			}
 		});
 		frame.add(saveButton); frame.add(loadButton);
+		
+		JButton resizeButton = new JButton("Resize");
+		resizeButton.setFocusable(false);
+		resizeButton.setBounds(60, 150, 100, 60);
+		resizeButton.setBackground(Color.GREEN);
+		resizeButton.addActionListener(event -> {
+			JPanel panel = new JPanel();
+			panel.setLayout(new java.awt.GridLayout(2, 2));
+
+			JLabel widthLabel = new JLabel("Width: ");
+			JLabel heightLabel = new JLabel("Height: ");
+			JTextField widthField = new JTextField(10);
+			JTextField heightField = new JTextField(10);
+
+			panel.add(widthLabel);
+			panel.add(widthField);
+			panel.add(heightLabel);
+			panel.add(heightField);
+
+			int result = JOptionPane.showConfirmDialog(frame, panel, "Enter new dimensions",
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+			if (result == JOptionPane.OK_OPTION) {
+				try {
+					int newWidth = Integer.parseInt(widthField.getText());
+					int newHeight = Integer.parseInt(heightField.getText());
+
+					if (newWidth <= 0 || newHeight <= 0) {
+						JOptionPane.showMessageDialog(frame, "Width and height must be positive numbers!", "Error",
+								JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+
+					BufferedImage newImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_3BYTE_BGR);
+					Graphics2D g = newImage.createGraphics();
+					g.setBackground(Color.white);
+					g.clearRect(0, 0, newWidth, newHeight);
+
+					// Eski resmi merkezden yeni resme çizme
+					int x = (newWidth - Canvas.image.getWidth()) / 2;
+					int y = (newHeight - Canvas.image.getHeight()) / 2;
+					if (x < 0)
+						x = 0;
+					if (y < 0)
+						y = 0;
+
+					g.drawImage(Canvas.image, x, y, null);
+					g.dispose();
+
+					// Yeni resmi atama
+					Canvas.image = newImage;
+					Canvas.rasterOFimage = Canvas.image.getRaster();
+
+					// Zoom ve center değerlerini sıfırlama
+					Canvas.zoomHorrizontal = 1.0f;
+					Canvas.zoomVertical = 1.0f;
+					Canvas.horrizontalC = 0;
+					Canvas.verticalC = 0;
+
+					JOptionPane.showMessageDialog(frame, "Image resized successfully!", "Success",
+							JOptionPane.INFORMATION_MESSAGE);
+
+				} catch (NumberFormatException e) {
+					JOptionPane.showMessageDialog(frame, "Please enter valid numbers!", "Error",
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		frame.add(resizeButton);
+		
 		{
 			Graphics2D cg = (Graphics2D) Canvas.image.getGraphics();
 			cg.setBackground(Color.white);
